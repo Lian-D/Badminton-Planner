@@ -6,6 +6,16 @@ import { formatMoney, splitCost, type Player, type Session } from "@/lib/split";
 import { Avatar, Card, Empty, ErrorText } from "./ui";
 import { EditSessionDialog } from "./EditSessionDialog";
 
+/** Regulars first: most sessions played, then name. */
+function byAttendance(players: Player[], sessions: Session[]) {
+  const played = new Map<number, number>();
+  for (const s of sessions) for (const id of s.playerIds) played.set(id, (played.get(id) ?? 0) + 1);
+  const order = [...players]
+    .sort((a, b) => (played.get(b.id) ?? 0) - (played.get(a.id) ?? 0) || a.name.localeCompare(b.name))
+    .map((p) => p.id);
+  return { order, played };
+}
+
 /** How many sessions the court log shows before "Show more". */
 const RECENT = 4;
 
@@ -70,6 +80,14 @@ export function AttendanceGrid({
 }) {
   const [editing, setEditing] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
+
+  // Column order is fixed while you're on the page, so ticking a box never makes
+  // columns jump. It's recalculated when players change and on the next load.
+  const rosterKey = players.map((p) => p.id).join(",");
+  const [ranking, setRanking] = useState(() => ({ key: rosterKey, ...byAttendance(players, sessions) }));
+  if (ranking.key !== rosterKey) setRanking({ key: rosterKey, ...byAttendance(players, sessions) });
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const columns = ranking.order.map((id) => byId.get(id)).filter((p): p is Player => !!p);
   const [optimistic, apply] = useOptimistic(sessions, applyChange);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string>();
@@ -112,11 +130,12 @@ export function AttendanceGrid({
                 <tr className="text-left text-[13px] uppercase tracking-wide text-[rgb(235_235_245/0.6)]">
                   <th className={`${sticky} min-w-[124px] py-2 pl-5 pr-2 font-medium sm:min-w-[150px] sm:pl-6 sm:pr-3 lg:min-w-[230px]`}>Session</th>
                   <th className="hidden px-2 py-2 font-medium sm:table-cell" />
-                  {players.map((p) => (
+                  {columns.map((p) => (
                     <th key={p.id} className="min-w-[60px] px-1 py-2 text-center lg:min-w-[84px] lg:px-2 font-semibold normal-case tracking-normal text-white">
                       <div className="flex flex-col items-center gap-1">
                         <Avatar name={p.name} size="sm" />
                         {p.name}
+                        <span className="text-[11px] font-normal text-white/45">{ranking.played.get(p.id) ?? 0} played</span>
                       </div>
                     </th>
                   ))}
@@ -125,7 +144,7 @@ export function AttendanceGrid({
                 <tr className="bg-white/[0.04]">
                   <td className={`${sticky} !bg-[rgb(29_33_42)] py-2.5 pl-5 pr-2 font-semibold sm:pl-6 sm:pr-3`}>Total owed</td>
                   <td className="hidden sm:table-cell" />
-                  {players.map((p) => {
+                  {columns.map((p) => {
                     const cents = owed.get(p.id) ?? 0;
                     return (
                       <td key={p.id} className={`px-1 py-2.5 text-center font-rounded lg:px-2 font-semibold tabular-nums ${cents ? "text-live" : "text-white/35"}`}>
@@ -153,7 +172,7 @@ export function AttendanceGrid({
                         <div>Played</div>
                         <div className="mt-1.5">Paid</div>
                       </td>
-                      {players.map((p) => {
+                      {columns.map((p) => {
                         const played = s.playerIds.includes(p.id);
                         const host = p.id === s.paidBy;
                         const paid = s.paidIds.includes(p.id);
