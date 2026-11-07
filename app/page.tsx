@@ -36,16 +36,16 @@ async function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <AttendanceGrid sessions={sessions} players={players} canEdit={canEdit} isAdmin={account?.role === "admin"} />
+
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        {canEdit ? <SessionForm players={players} today={today} /> : <SignInPrompt />}
+        <BalancesTable balances={balances} />
         <SettleUp transfers={transfers} players={players} today={today} canEdit={canEdit} />
       </div>
 
-      <AttendanceGrid sessions={sessions} players={players} canEdit={canEdit} isAdmin={account?.role === "admin"} />
-
-      <BalancesTable balances={balances} />
-
       <PaymentsList payments={payments} players={players} canEdit={canEdit} />
+
+      {canEdit ? <SessionForm players={players} today={today} /> : <SignInPrompt />}
     </div>
   );
 }

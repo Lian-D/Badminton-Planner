@@ -6,6 +6,9 @@ import { formatMoney, splitCost, type Player, type Session } from "@/lib/split";
 import { Avatar, Card, Empty, ErrorText } from "./ui";
 import { EditSessionDialog } from "./EditSessionDialog";
 
+/** How many sessions the court log shows before "Show more". */
+const RECENT = 4;
+
 type Change = { sessionId: number; playerId: number; field: "played" | "paid"; on: boolean };
 
 function applyChange(sessions: Session[], c: Change): Session[] {
@@ -66,6 +69,7 @@ export function AttendanceGrid({
   isAdmin?: boolean;
 }) {
   const [editing, setEditing] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const [optimistic, apply] = useOptimistic(sessions, applyChange);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string>();
@@ -133,7 +137,7 @@ export function AttendanceGrid({
                 </tr>
               </thead>
               <tbody>
-                {optimistic.map((s) => {
+                {(showAll ? optimistic : optimistic.slice(0, RECENT)).map((s) => {
                   const each = s.playerIds.length ? Math.round(s.costCents / s.playerIds.length) : 0;
                   return (
                     <tr key={s.id} className="align-middle">
@@ -208,6 +212,23 @@ export function AttendanceGrid({
               </tbody>
             </table>
           </div>
+          {optimistic.length > RECENT && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <span className="pl-1 text-[13px] text-[rgb(235_235_245/0.6)]">
+                {showAll
+                  ? `Showing all ${optimistic.length} sessions.`
+                  : `Showing the latest ${RECENT} of ${optimistic.length}. Total owed counts every session.`}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowAll((v) => !v)}
+                aria-expanded={showAll}
+                className="ring-pill px-4 py-2 text-[15px] font-semibold text-cobalt-soft hover:bg-white/8"
+              >
+                {showAll ? "Show less" : `Show ${optimistic.length - RECENT} more`}
+              </button>
+            </div>
+          )}
           <div className="mt-3"><ErrorText>{error}</ErrorText></div>
           {editing !== null && optimistic.some((s) => s.id === editing) && (
             <EditSessionDialog

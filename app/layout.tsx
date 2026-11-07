@@ -22,9 +22,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <CourtBackground />
         <main className="mx-auto w-full max-w-6xl px-4 pb-32 pt-8 sm:px-6 sm:pb-12 sm:pt-12">
           <header className="mb-8 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <ShuttleIcon className="h-9 w-9" />
-              <span className="font-display text-[28px] font-bold tracking-[-0.03em] sm:text-[34px]">Badminton Planner</span>
+            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+              <ShuttleIcon className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
+              <span className="truncate whitespace-nowrap font-display text-[22px] font-bold tracking-[-0.03em] sm:text-[34px]">Badminton Planner</span>
             </div>
             <Suspense fallback={<Tabs />}>
               <HeaderNav />

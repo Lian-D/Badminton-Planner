@@ -83,6 +83,7 @@ export function MobileNav({ isAdmin = false }: { isAdmin?: boolean }) {
     <nav
       aria-label="Sections"
       className="glass fixed inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-50 mx-auto flex w-max gap-1 rounded-full p-1.5 sm:hidden"
+      style={{ background: "rgb(28 31 38 / 0.96)" }}
     >
       {tabsFor(isAdmin).map((t) => {
         const active = isActive(t.href);

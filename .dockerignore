@@ -8,3 +8,4 @@ npm-debug.log*
 .env*
 Dockerfile
 docker-compose.yml
+docs

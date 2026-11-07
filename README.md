@@ -2,6 +2,8 @@
 
 Vote on court times, log court bookings, and keep track of who owes whom. Built with Next.js 16 and SQLite, with an optional Redis cache.
 
+![Badminton Planner: the court log on desktop and the court vote on a phone](docs/screenshots/hero.webp)
+
 ## Features
 
 - **Court vote** (`/vote`): a when2meet-style poll for Mon–Fri, 7–9 pm or 8–10 pm. Anyone can vote by signing in with just a name and an optional password; no account is needed.
@@ -20,6 +22,26 @@ Vote on court times, log court bookings, and keep track of who owes whom. Built 
   - a **weekly vote reminder**, sent once per voting week from 9 am server time (the voting week rolls over on Saturday)
   - a post **per person** when they vote *or remove votes*, sent once they stop tapping, summarising what changed (voted, removed, or updated, with Added/Removed lists)
 - **Settings** (Admin): the site URL that Discord messages link back to.
+
+## Screenshots
+
+**Court vote.** A when2meet-style poll. Your picks are lime, everyone else's show as a blue heatmap.
+
+![Court vote page](docs/screenshots/vote.webp)
+
+**Courts & costs.** The court log checklist, who owes what, and the fewest payments to settle up.
+
+![Courts and costs page](docs/screenshots/costs.webp)
+
+**Admin.** Accounts and roles, the site URL, the sign-up switch, players, and Discord notifications.
+
+![Admin panel](docs/screenshots/admin.webp)
+
+**On a phone.** Floating tab bar, and the court log scrolls sideways.
+
+![Mobile views](docs/screenshots/mobile.webp)
+
+<sub>Screenshots use made-up demo data.</sub>
 
 ## Run with Docker
 
