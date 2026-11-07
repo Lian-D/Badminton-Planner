@@ -41,7 +41,7 @@ async function Dashboard() {
         <SettleUp transfers={transfers} players={players} today={today} canEdit={canEdit} />
       </div>
 
-      <AttendanceGrid sessions={sessions} players={players} canEdit={canEdit} />
+      <AttendanceGrid sessions={sessions} players={players} canEdit={canEdit} isAdmin={account?.role === "admin"} />
 
       <BalancesTable balances={balances} />
 

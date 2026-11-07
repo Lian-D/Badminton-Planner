@@ -68,7 +68,7 @@ export async function toggleVote(week: string, day: number, slot: string, on: bo
       "DELETE FROM votes WHERE voter_id = ? AND week_start = ? AND day = ? AND slot = ?",
     ).run(voter.id, week, day, slot);
   }
-  queueVoteNotification(voter, week);
+  queueVoteNotification(voter, week, { day, slot, on });
   await invalidate(CacheKeys.votes(week));
   refresh();
 }

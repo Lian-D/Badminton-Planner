@@ -15,7 +15,7 @@ export const DISCORD_EVENTS = {
   payments: { label: "Payments (ticked Paid, Mark paid, custom)", default: true },
   accounts: { label: "New accounts", default: true },
   weeklyVote: { label: "Weekly vote reminder", default: true },
-  votes: { label: "When someone votes", default: true },
+  votes: { label: "When someone votes or removes votes", default: true },
 } as const;
 export type DiscordEvent = keyof typeof DISCORD_EVENTS;
 
@@ -120,46 +120,93 @@ export async function sendNow(event: DiscordEvent, msg: DiscordMessage): Promise
 // ---- Per-person vote notifications (debounced) ------------------------------
 
 const VOTE_DELAY_MS = Number(process.env.VOTE_NOTIFY_DELAY_MS ?? 45_000);
-const g = globalThis as unknown as {
-  __bpVoteTimers?: Map<string, ReturnType<typeof setTimeout>>;
-  __bpVoteAnnounced?: Set<string>;
-};
-const timers = (g.__bpVoteTimers ??= new Map());
-const announced = (g.__bpVoteAnnounced ??= new Set());
+type Burst = { timer: ReturnType<typeof setTimeout>; before: Set<string> };
+const g = globalThis as unknown as { __bpVoteBursts?: Map<string, Burst> };
+const bursts = (g.__bpVoteBursts ??= new Map());
 
-export function voteSummary(voterId: number, week: string): string[] {
+const slotKey = (day: number, slot: string) => `${day}|${slot}`;
+
+function currentPicks(voterId: number, week: string): Set<string> {
   const rows = db
-    .prepare("SELECT day, slot FROM votes WHERE voter_id = ? AND week_start = ? ORDER BY day, slot")
+    .prepare("SELECT day, slot FROM votes WHERE voter_id = ? AND week_start = ?")
     .all(voterId, week) as { day: number; slot: string }[];
-  return rows.map(
-    (r) => `${DAYS[r.day].slice(0, 3)} ${shortDate(addDays(week, r.day))}, ${SLOTS.find((s) => s.id === r.slot)?.label ?? r.slot}`,
-  );
+  return new Set(rows.map((r) => slotKey(r.day, r.slot)));
+}
+
+function describe(key: string, week: string): string {
+  const [d, slot] = key.split("|");
+  const day = Number(d);
+  return `${DAYS[day].slice(0, 3)} ${shortDate(addDays(week, day))}, ${SLOTS.find((s) => s.id === slot)?.label ?? slot}`;
+}
+
+const sorted = (keys: Iterable<string>) => [...keys].sort();
+
+/** Pure: the Discord message for one person's change, or null if nothing changed overall. */
+export function voteChangeMessage(name: string, week: string, before: Set<string>, after: Set<string>): DiscordMessage | null {
+  const added = sorted([...after].filter((k) => !before.has(k)));
+  const removed = sorted([...before].filter((k) => !after.has(k)));
+  if (!added.length && !removed.length) return null;
+
+  const range = `${shortDate(week)} – ${shortDate(addDays(week, 4))}`;
+  const list = (keys: string[], strike = false) =>
+    keys.map((k) => (strike ? `• ~~${describe(k, week)}~~` : `• ${describe(k, week)}`)).join("\n");
+  const plural = (n: number) => `${n} vote${n === 1 ? "" : "s"}`;
+  const path = `/vote?week=${week}`;
+
+  if (before.size === 0) {
+    return { title: `🗳️ ${name} voted for ${range}`, description: list(added), path };
+  }
+  if (after.size === 0) {
+    return { title: `🚫 ${name} removed their votes for ${range}`, description: list(removed, true), path };
+  }
+  if (!added.length) {
+    return {
+      title: `➖ ${name} removed ${plural(removed.length)} for ${range}`,
+      description: list(removed, true),
+      fields: [{ name: "Still in for", value: list(sorted(after)) }],
+      path,
+    };
+  }
+  return {
+    title: `🔁 ${name} updated their vote for ${range}`,
+    fields: [
+      { name: "Added", value: list(added) },
+      ...(removed.length ? [{ name: "Removed", value: list(removed, true) }] : []),
+      { name: "Now in for", value: list(sorted(after)) },
+    ],
+    path,
+  };
 }
 
 /**
- * Called on every vote tap. Waits until the person stops tapping, then posts
- * their whole choice for the week in one message.
+ * Called after every vote tap (the change is already saved). Waits until the
+ * person stops tapping, then posts what changed across the whole burst:
+ * new votes, removed votes, or both.
  */
-export function queueVoteNotification(voter: { id: number; name: string }, week: string) {
+export function queueVoteNotification(
+  voter: { id: number; name: string },
+  week: string,
+  tap: { day: number; slot: string; on: boolean },
+) {
   const { url, events } = getDiscordSettings();
   if (!url || !events.votes) return;
   const key = `${voter.id}:${week}`;
-  clearTimeout(timers.get(key));
-  timers.set(
-    key,
-    setTimeout(() => {
-      timers.delete(key);
-      const picks = voteSummary(voter.id, week);
-      const first = !announced.has(key);
-      announced.add(key);
-      const range = `${shortDate(week)} – ${shortDate(addDays(week, 4))}`;
-      void sendNow("votes", {
-        title: picks.length
-          ? `🗳️ ${voter.name} ${first ? "voted" : "updated their vote"} for ${range}`
-          : `🗳️ ${voter.name} can't make any slots for ${range}`,
-        description: picks.length ? picks.map((p) => `• ${p}`).join("\n") : undefined,
-        path: `/vote?week=${week}`,
-      });
-    }, VOTE_DELAY_MS),
-  );
+  const existing = bursts.get(key);
+  if (existing) clearTimeout(existing.timer);
+
+  // Start of a burst: work out what they had before this tap.
+  let before = existing?.before;
+  if (!before) {
+    before = currentPicks(voter.id, week);
+    const k = slotKey(tap.day, tap.slot);
+    if (tap.on) before.delete(k);
+    else before.add(k);
+  }
+
+  const timer = setTimeout(() => {
+    bursts.delete(key);
+    const msg = voteChangeMessage(voter.name, week, before, currentPicks(voter.id, week));
+    if (msg) void sendNow("votes", msg);
+  }, VOTE_DELAY_MS);
+  bursts.set(key, { timer, before });
 }

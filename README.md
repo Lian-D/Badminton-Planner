@@ -10,7 +10,7 @@ Vote on court times, log court bookings, and keep track of who owes whom. Built 
 - **Accounts**:
   - The first account created becomes the **admin**.
   - Any signed-in account (a **host**) can log courts and tick boxes.
-  - Admins manage accounts, players, whether new accounts can be created, and Discord notifications.
+  - Admins manage accounts, players, whether new accounts can be created, and Discord notifications. They can also **edit a logged session's details** (date, venue, courts, hours, cost, who paid, notes) from the court log.
   - Visitors who aren't signed in see the costs page read-only.
 - **Profile pictures** are generated from a SHA-256 hash of each person's name, so the same name always gets the same face. They use [Notionists](https://heyzoish.gumroad.com/l/notionists) by Zoish (CC0) via DiceBear.
 - **Discord notifications**: an admin pastes a webhook URL and picks which events to post:
@@ -18,7 +18,7 @@ Vote on court times, log court bookings, and keep track of who owes whom. Built 
   - payments
   - new accounts
   - a **weekly vote reminder**, sent once per voting week from 9 am server time (the voting week rolls over on Saturday)
-  - a post **per person** when they vote, sent once they stop tapping, with their whole choice in one message
+  - a post **per person** when they vote *or remove votes*, sent once they stop tapping, summarising what changed (voted, removed, or updated, with Added/Removed lists)
 - **Settings** (Admin): the site URL that Discord messages link back to.
 
 ## Run with Docker

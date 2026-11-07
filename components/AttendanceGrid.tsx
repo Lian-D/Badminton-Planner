@@ -4,6 +4,7 @@ import { useOptimistic, useState, useTransition } from "react";
 import { deleteSession, setAttendance, setPaid } from "@/app/actions";
 import { formatMoney, splitCost, type Player, type Session } from "@/lib/split";
 import { Avatar, Card, Empty, ErrorText } from "./ui";
+import { EditSessionDialog } from "./EditSessionDialog";
 
 type Change = { sessionId: number; playerId: number; field: "played" | "paid"; on: boolean };
 
@@ -53,7 +54,18 @@ function Check({
   );
 }
 
-export function AttendanceGrid({ sessions, players, canEdit }: { sessions: Session[]; players: Player[]; canEdit: boolean }) {
+export function AttendanceGrid({
+  sessions,
+  players,
+  canEdit,
+  isAdmin = false,
+}: {
+  sessions: Session[];
+  players: Player[];
+  canEdit: boolean;
+  isAdmin?: boolean;
+}) {
+  const [editing, setEditing] = useState<number | null>(null);
   const [optimistic, apply] = useOptimistic(sessions, applyChange);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string>();
@@ -171,12 +183,24 @@ export function AttendanceGrid({ sessions, players, canEdit }: { sessions: Sessi
                         );
                       })}
                       <td className="border-t border-white/8 py-3 pl-2 pr-5 text-right sm:pr-6">
-                        {canEdit && (
-                          <form action={deleteSession}>
-                            <input type="hidden" name="id" value={s.id} />
-                            <button className="text-xs text-white/40 hover:text-live">Delete</button>
-                          </form>
-                        )}
+                        <div className="flex flex-col items-end gap-2">
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setEditing(s.id)}
+                              aria-label={`Edit session on ${s.date}`}
+                              className="text-xs font-medium text-cobalt-soft hover:text-white"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {canEdit && (
+                            <form action={deleteSession}>
+                              <input type="hidden" name="id" value={s.id} />
+                              <button className="text-xs text-white/40 hover:text-live">Delete</button>
+                            </form>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -185,6 +209,13 @@ export function AttendanceGrid({ sessions, players, canEdit }: { sessions: Sessi
             </table>
           </div>
           <div className="mt-3"><ErrorText>{error}</ErrorText></div>
+          {editing !== null && optimistic.some((s) => s.id === editing) && (
+            <EditSessionDialog
+              session={optimistic.find((s) => s.id === editing)!}
+              players={players}
+              onClose={() => setEditing(null)}
+            />
+          )}
         </>
       )}
     </Card>

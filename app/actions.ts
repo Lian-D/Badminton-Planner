@@ -59,24 +59,43 @@ export async function removePlayer(_: ActionState, form: FormData): Promise<Acti
   return { ok: Date.now() };
 }
 
+type SessionDetails = {
+  date: string;
+  venue: string;
+  courts: number;
+  hours: number;
+  costCents: number;
+  paidBy: number;
+  notes: string | null;
+};
+
+/** Shared validation for logging and editing a session. */
+function readSessionDetails(form: FormData): SessionDetails | { error: string } {
+  const d: SessionDetails = {
+    date: str(form, "date"),
+    venue: str(form, "venue"),
+    courts: parseInt(str(form, "courts"), 10),
+    hours: parseFloat(str(form, "hours")),
+    costCents: toCents(str(form, "cost")),
+    paidBy: Number(form.get("paidBy")),
+    notes: str(form, "notes") || null,
+  };
+  if (!isDate(d.date)) return { error: "Pick a date." };
+  if (!d.venue) return { error: "Enter a venue." };
+  if (!(d.courts > 0)) return { error: "Courts must be at least 1." };
+  if (!(d.hours > 0)) return { error: "Hours must be more than 0." };
+  if (!(d.costCents >= 0)) return { error: "Enter the total cost." };
+  if (!d.paidBy) return { error: "Choose who paid." };
+  return d;
+}
+
 export async function addSession(_: ActionState, form: FormData): Promise<ActionState> {
   const me = await getAccount();
   if (!me) return SIGN_IN;
-  const date = str(form, "date");
-  const venue = str(form, "venue");
-  const courts = parseInt(str(form, "courts"), 10);
-  const hours = parseFloat(str(form, "hours"));
-  const costCents = toCents(str(form, "cost"));
-  const paidBy = Number(form.get("paidBy"));
-  const notes = str(form, "notes") || null;
+  const details = readSessionDetails(form);
+  if ("error" in details) return details;
+  const { date, venue, courts, hours, costCents, paidBy, notes } = details;
   const playerIds = [...new Set(form.getAll("players").map(Number))].filter(Boolean);
-
-  if (!isDate(date)) return { error: "Pick a date." };
-  if (!venue) return { error: "Enter a venue." };
-  if (!(courts > 0)) return { error: "Courts must be at least 1." };
-  if (!(hours > 0)) return { error: "Hours must be more than 0." };
-  if (!(costCents >= 0)) return { error: "Enter the total cost." };
-  if (!paidBy) return { error: "Choose who paid." };
   if (playerIds.length === 0) return { error: "Select at least one player to split with." };
 
   try {
@@ -105,6 +124,29 @@ export async function addSession(_: ActionState, form: FormData): Promise<Action
     actor: me.username,
     path: "/",
   }));
+  await changed();
+  return { ok: Date.now() };
+}
+
+/** Admin only: change a logged session's details (who played is edited with the checkboxes). */
+export async function updateSession(_: ActionState, form: FormData): Promise<ActionState> {
+  const me = await getAccount();
+  if (me?.role !== "admin") return { error: "Only admins can edit sessions." };
+  const id = Number(form.get("id"));
+  const details = readSessionDetails(form);
+  if ("error" in details) return details;
+  const { date, venue, courts, hours, costCents, paidBy, notes } = details;
+  try {
+    const { changes } = db
+      .prepare(
+        `UPDATE sessions SET date = ?, venue = ?, courts = ?, hours = ?, cost_cents = ?, paid_by = ?, notes = ?
+          WHERE id = ?`,
+      )
+      .run(date, venue, courts, hours, costCents, paidBy, notes, id);
+    if (!changes) return { error: "That session no longer exists." };
+  } catch (e) {
+    return fail(e);
+  }
   await changed();
   return { ok: Date.now() };
 }
