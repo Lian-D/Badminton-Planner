@@ -8,7 +8,8 @@ import { queueVoteNotification } from "@/lib/discord";
 import { isIsoDate, mondayOf, SLOTS } from "@/lib/dates";
 import { checkPassword, getCurrentVoter, hashPassword, newToken, VOTER_COOKIE } from "@/lib/voters";
 
-export type SignInState = { error?: string } | undefined;
+/** `name` is echoed back so the form can keep it after an error. */
+export type SignInState = { error?: string; name?: string } | undefined;
 
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
@@ -16,7 +17,7 @@ export async function signIn(_: SignInState, form: FormData): Promise<SignInStat
   const name = String(form.get("name") ?? "").trim();
   const password = String(form.get("password") ?? "");
   if (!name) return { error: "Enter your name." };
-  if (name.length > 40) return { error: "Keep your name under 40 characters." };
+  if (name.length > 40) return { error: "Keep your name under 40 characters.", name };
 
   const existing = db
     .prepare("SELECT id, password_hash AS hash, token FROM voters WHERE name = ?")
@@ -26,7 +27,7 @@ export async function signIn(_: SignInState, form: FormData): Promise<SignInStat
   if (existing) {
     // Same as when2meet: a name without a password can be picked up by anyone.
     if (existing.hash && !checkPassword(password, existing.hash)) {
-      return { error: `Wrong password for “${name}”. Ask an admin to reset it if you've forgotten.` };
+      return { error: `Wrong password for “${name}”. Ask an admin to reset it if you've forgotten.`, name };
     }
     // No password yet (new, or reset by an admin): whoever signs in can set one now.
     if (!existing.hash && password) {

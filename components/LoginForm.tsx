@@ -20,7 +20,7 @@ export function LoginForm({ firstAccount, signupsOpen }: { firstAccount: boolean
           title="Create the admin account"
           subtitle="You're the first one here, so this account will manage hosts, players and sign-ups."
         >
-          <SignUpFields action={upAction} pending={upPending} error={upState?.error} cta="Create admin account" />
+          <SignUpFields action={upAction} pending={upPending} error={upState?.error} username={upState?.username} cta="Create admin account" />
         </Card>
       </>
     );
@@ -50,7 +50,7 @@ export function LoginForm({ firstAccount, signupsOpen }: { firstAccount: boolean
         {mode === "in" ? (
           <form action={inAction} className="space-y-4">
             <Field label="Username">
-              <input name="username" className="glass-input" autoComplete="username" required autoFocus />
+              <input name="username" defaultValue={inState?.username} className="glass-input" autoComplete="username" required autoFocus />
             </Field>
             <Field label="Password">
               <input name="password" type="password" className="glass-input" autoComplete="current-password" required />
@@ -61,7 +61,7 @@ export function LoginForm({ firstAccount, signupsOpen }: { firstAccount: boolean
             </button>
           </form>
         ) : signupsOpen ? (
-          <SignUpFields action={upAction} pending={upPending} error={upState?.error} cta="Create account" />
+          <SignUpFields action={upAction} pending={upPending} error={upState?.error} username={upState?.username} cta="Create account" />
         ) : (
           <p className="rounded-2xl bg-white/[0.04] px-4 py-6 text-center text-[15px] text-white/60">
             Account creation is turned off. Ask an admin to turn it on.
@@ -76,11 +76,13 @@ function SignUpFields({
   action,
   pending,
   error,
+  username,
   cta,
 }: {
   action: (form: FormData) => void;
   pending: boolean;
   error?: string;
+  username?: string;
   cta: string;
 }) {
   return (
@@ -88,6 +90,7 @@ function SignUpFields({
       <Field label="Username">
         <input
           name="username"
+          defaultValue={username}
           className="glass-input"
           autoComplete="username"
           required

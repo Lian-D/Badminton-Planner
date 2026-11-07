@@ -62,7 +62,7 @@ async function Admin() {
   }));
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+    <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_380px]">
       <div className="min-w-0 space-y-6">
         <AccountsPanel accounts={accounts} meId={me.id} />
         <VotersPanel voters={voters} />

@@ -37,7 +37,7 @@ async function Vote({ searchParams }: Pick<PageProps<"/vote">, "searchParams">) 
   const weekLink = (w: string) => (w === current ? "/vote" : `/vote?week=${w}`);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_360px]">
       <Card
         title="When should we book courts?"
         subtitle={`${voters.length} ${voters.length === 1 ? "person has" : "people have"} voted this week`}

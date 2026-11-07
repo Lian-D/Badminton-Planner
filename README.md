@@ -6,13 +6,13 @@ Vote on court times, log court bookings, and keep track of who owes whom. Built 
 
 ## Features
 
-- **Court vote** (`/vote`): a when2meet-style poll for Mon–Fri, 7–9 pm or 8–10 pm. Anyone can vote by signing in with just a name and an optional password; no account is needed.
+- **Court vote** (`/vote`): a when2meet-style poll for Mon–Fri, 7–9 pm or 8–10 pm. Anyone can vote by signing in with just a name and an optional password; no account is needed. Slots are coloured from blue to lime as more people pick them.
 - **Court log checklist**: like the old spreadsheet. Each session has a *Played* and a *Paid* checkbox per person, and a **Total owed** row adds up each person's unpaid shares. Ticking *Paid* counts as paying that share back to the host (whoever booked).
 - **Money owed**, **Settle up** (the fewest payments that clear every balance) and **payment history**.
 - **Accounts**:
   - The first account created becomes the **admin**.
   - Any signed-in account (a **host**) can log courts and tick boxes.
-  - Admins manage accounts, players, whether new accounts can be created, and Discord notifications. They can also **edit a logged session's details** (date, venue, courts, hours, cost, who paid, notes) from the court log.
+  - Admins manage accounts, players, whether new accounts can be created, and Discord notifications. They can also **edit a logged session's details** (date, venue, courts, hours, cost, who paid, notes) from the court log, and **reset voting logins**: this clears a voter's password and signs them out everywhere (their votes are kept), or removes the voter along with their votes.
   - Visitors who aren't signed in see the costs page read-only.
 - **Profile pictures** are generated from a SHA-256 hash of each person's name, so the same name always gets the same face. They use [Notionists](https://heyzoish.gumroad.com/l/notionists) by Zoish (CC0) via DiceBear.
 - **Discord notifications**: an admin pastes a webhook URL and picks which events to post:
@@ -25,7 +25,7 @@ Vote on court times, log court bookings, and keep track of who owes whom. Built 
 
 ## Screenshots
 
-**Court vote.** A when2meet-style poll. Your picks are lime, everyone else's show as a blue heatmap.
+**Court vote.** A when2meet-style poll. Each slot's colour runs from blue (a few votes) through teal to lime (the most), and your own picks are outlined.
 
 ![Court vote page](docs/screenshots/vote.webp)
 
@@ -33,7 +33,7 @@ Vote on court times, log court bookings, and keep track of who owes whom. Built 
 
 ![Courts and costs page](docs/screenshots/costs.webp)
 
-**Admin.** Accounts and roles, the site URL, the sign-up switch, players, and Discord notifications.
+**Admin.** Accounts and roles, voting logins, the site URL, the sign-up switch, players, and Discord notifications.
 
 ![Admin panel](docs/screenshots/admin.webp)
 

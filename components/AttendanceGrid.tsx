@@ -110,10 +110,10 @@ export function AttendanceGrid({
             <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="text-left text-[13px] uppercase tracking-wide text-[rgb(235_235_245/0.6)]">
-                  <th className={`${sticky} min-w-[124px] py-2 pl-5 pr-2 font-medium sm:min-w-[150px] sm:pl-6 sm:pr-3`}>Session</th>
+                  <th className={`${sticky} min-w-[124px] py-2 pl-5 pr-2 font-medium sm:min-w-[150px] sm:pl-6 sm:pr-3 lg:min-w-[230px]`}>Session</th>
                   <th className="hidden px-2 py-2 font-medium sm:table-cell" />
                   {players.map((p) => (
-                    <th key={p.id} className="min-w-[60px] px-1 py-2 text-center font-semibold normal-case tracking-normal text-white">
+                    <th key={p.id} className="min-w-[60px] px-1 py-2 text-center lg:min-w-[84px] lg:px-2 font-semibold normal-case tracking-normal text-white">
                       <div className="flex flex-col items-center gap-1">
                         <Avatar name={p.name} size="sm" />
                         {p.name}
@@ -128,7 +128,7 @@ export function AttendanceGrid({
                   {players.map((p) => {
                     const cents = owed.get(p.id) ?? 0;
                     return (
-                      <td key={p.id} className={`px-1 py-2.5 text-center font-rounded font-semibold tabular-nums ${cents ? "text-live" : "text-white/35"}`}>
+                      <td key={p.id} className={`px-1 py-2.5 text-center font-rounded lg:px-2 font-semibold tabular-nums ${cents ? "text-live" : "text-white/35"}`}>
                         {formatMoney(cents)}
                       </td>
                     );
@@ -143,7 +143,7 @@ export function AttendanceGrid({
                     <tr key={s.id} className="align-middle">
                       <td className={`${sticky} border-t border-white/8 py-3 pl-5 pr-2 sm:pl-6 sm:pr-3`}>
                         <div className="font-semibold tabular-nums">{s.date}</div>
-                        <div className="max-w-[110px] truncate text-xs text-white/50 sm:max-w-[160px]">{s.venue} · {s.courts}×{s.hours}h</div>
+                        <div className="max-w-[110px] truncate text-xs text-white/50 sm:max-w-[160px] lg:max-w-[260px]">{s.venue} · {s.courts}×{s.hours}h</div>
                         <div className="mt-1 text-xs tabular-nums text-white/70">
                           {formatMoney(s.costCents)} · <span className="text-volt">{formatMoney(each)} each</span>
                         </div>
@@ -158,7 +158,7 @@ export function AttendanceGrid({
                         const host = p.id === s.paidBy;
                         const paid = s.paidIds.includes(p.id);
                         return (
-                          <td key={p.id} className="border-t border-white/8 px-1 py-3">
+                          <td key={p.id} className="border-t border-white/8 px-1 py-3 lg:px-2 lg:py-3.5">
                             <div className="flex flex-col items-center gap-1.5">
                               <Check
                                 tone="played"

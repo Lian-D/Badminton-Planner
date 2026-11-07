@@ -8,6 +8,28 @@ import { Avatar } from "./ui";
 
 type Toggle = { day: number; slot: SlotId; on: boolean };
 
+// Heat scale: blue (few votes) → teal → lime (everyone).
+const STOPS: [number, [number, number, number]][] = [
+  [0, [47, 140, 255]],
+  [0.5, [32, 201, 151]],
+  [1, [200, 243, 29]],
+];
+
+/** Fill for a slot where `ratio` = share of this week's voters who picked it. */
+export function heat(ratio: number): { background: string; dark: boolean } {
+  if (ratio <= 0) return { background: "rgb(255 255 255 / 0.025)", dark: false };
+  const r = Math.min(1, ratio);
+  const i = r <= STOPS[1][0] ? 0 : 1;
+  const [a, ca] = STOPS[i];
+  const [b, cb] = STOPS[i + 1];
+  const t = (r - a) / (b - a);
+  const [red, green, blue] = ca.map((c, k) => Math.round(c + (cb[k] - c) * t));
+  const alpha = 0.2 + 0.8 * r;
+  return { background: `rgb(${red} ${green} ${blue} / ${alpha.toFixed(2)})`, dark: r >= 0.7 };
+}
+
+const LEGEND = `linear-gradient(90deg, ${[0.15, 0.5, 1].map((r) => heat(r).background).join(", ")})`;
+
 export function VoteGrid({ week, today, votes, me }: { week: string; today: string; votes: Vote[]; me: Voter | null }) {
   const [pending, startTransition] = useTransition();
   const [optimistic, apply] = useOptimistic(votes, (current: Vote[], t: Toggle) =>
@@ -30,6 +52,18 @@ export function VoteGrid({ week, today, votes, me }: { week: string; today: stri
 
   return (
     <div className={`space-y-2.5 ${pending ? "cursor-progress" : ""}`}>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 pb-1 text-[12px] text-white/55">
+        <span className="flex items-center gap-2">
+          Fewer
+          <span aria-hidden className="h-2.5 w-28 rounded-full" style={{ background: LEGEND }} />
+          More votes
+        </span>
+        {me && (
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden className="h-3 w-3 rounded-[4px] border-2 border-volt" /> Your picks
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-[64px_1fr_1fr] gap-2.5 px-1 text-center text-xs font-medium uppercase tracking-wider text-white/40 sm:grid-cols-[76px_1fr_1fr]">
         <span />
         {SLOTS.map((s) => <span key={s.id}>{s.label}</span>)}
@@ -58,6 +92,7 @@ export function VoteGrid({ week, today, votes, me }: { week: string; today: stri
               const mine = !!me && people.some((p) => p.voterId === me.id);
               const ratio = voterCount ? people.length / voterCount : 0;
               const top = people.length > 0 && people.length === best;
+              const fill = heat(ratio);
               return (
                 <button
                   key={s.id}
@@ -66,32 +101,37 @@ export function VoteGrid({ week, today, votes, me }: { week: string; today: stri
                   onClick={() => onToggle(d, s.id, !mine)}
                   aria-pressed={mine}
                   aria-label={`${dayName} ${s.label}: ${people.length} available${mine ? ", including you" : ""}`}
-                  style={mine ? undefined : { backgroundColor: `rgb(47 140 255 / ${people.length ? 0.08 + ratio * 0.3 : 0.025})` }}
+                  style={{ background: fill.background }}
                   className={`flex min-h-[92px] flex-col justify-between gap-2 rounded-[26px] border p-3 text-left transition disabled:cursor-default sm:p-3.5 ${
+                    fill.dark ? "text-ink" : "text-white"
+                  } ${
                     mine
-                      ? "border-volt bg-volt text-ink shadow-[0_12px_30px_-12px_rgb(200_243_29/0.6)]"
+                      ? "border-volt ring-2 ring-volt/60 ring-offset-2 ring-offset-[rgb(21_24_31)] shadow-[0_12px_30px_-12px_rgb(200_243_29/0.6)]"
                       : "border-white/8 enabled:hover:border-white/25"
                   }`}
                 >
                   <span className="flex w-full items-start justify-between gap-2">
                     <span className="font-rounded text-3xl font-semibold leading-none tracking-[-0.02em] tabular-nums">{people.length}</span>
-                    {top && (
-                      <span
-                        className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${
-                          mine ? "bg-ink/90 text-volt" : "bg-black/40 text-volt"
-                        }`}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-volt" />
-                        Top
-                      </span>
-                    )}
+                    <span className="flex flex-wrap justify-end gap-1">
+                      {mine && (
+                        <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${fill.dark ? "bg-ink text-volt" : "bg-volt text-ink"}`}>
+                          ✓ You
+                        </span>
+                      )}
+                      {top && (
+                        <span className="flex items-center gap-1 rounded-full bg-ink/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-volt">
+                          <span className="h-1.5 w-1.5 rounded-full bg-volt" />
+                          Top
+                        </span>
+                      )}
+                    </span>
                   </span>
                   <span className="flex flex-wrap gap-1">
                     {people.map((p) => (
                       <span
                         key={p.voterId}
                         className={`flex items-center gap-1 rounded-full py-0.5 pl-0.5 pr-2 text-[11px] font-medium leading-tight ${
-                          mine ? "bg-ink/12 text-ink" : "bg-cobalt/25 text-cobalt-soft"
+                          fill.dark ? "bg-ink/12 text-ink" : "bg-black/25 text-white/90"
                         }`}
                       >
                         <Avatar name={p.name} size="xs" />

@@ -29,7 +29,7 @@ export function SignInPanel({ me }: { me: Voter | null }) {
     <Card title="Sign in to vote" subtitle="No account needed. Just pick a name for this browser.">
       <form action={action} className="space-y-3">
         <Field label="Your name">
-          <input name="name" className="glass-input" autoComplete="nickname" required maxLength={40} />
+          <input name="name" defaultValue={state?.name} className="glass-input" autoComplete="nickname" required maxLength={40} />
         </Field>
         <Field label="Password (optional)">
           <input name="password" type="password" className="glass-input" autoComplete="current-password" />

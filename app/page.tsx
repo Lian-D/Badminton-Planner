@@ -38,7 +38,7 @@ async function Dashboard() {
     <div className="space-y-6">
       <AttendanceGrid sessions={sessions} players={players} canEdit={canEdit} isAdmin={account?.role === "admin"} />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
         <BalancesTable balances={balances} />
         <SettleUp transfers={transfers} players={players} today={today} canEdit={canEdit} />
       </div>

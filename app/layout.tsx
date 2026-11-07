@@ -20,7 +20,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="relative min-h-full font-sans">
         <CourtBackground />
-        <main className="mx-auto w-full max-w-6xl px-4 pb-32 pt-8 sm:px-6 sm:pb-12 sm:pt-12">
+        <main className="mx-auto w-full max-w-[1480px] px-4 pb-32 pt-8 sm:px-6 sm:pb-12 sm:pt-12">
           <header className="mb-8 flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
               <ShuttleIcon className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
