@@ -3,7 +3,8 @@
 import { refresh } from "next/cache";
 import { db } from "@/lib/db";
 import { adminCount, getAccount, setSignupsEnabled, type Role } from "@/lib/auth";
-import { hashPassword } from "@/lib/passwords";
+import { hashPassword, newToken } from "@/lib/passwords";
+import { CacheKeys, invalidate } from "@/lib/cache";
 import {
   clearDiscordWebhook,
   deliver,
@@ -142,6 +143,37 @@ export async function saveSiteUrl(_: AdminState, form: FormData): Promise<AdminS
       if (!url) throw new Error("Enter a full address, e.g. https://badminton.example.com");
       putSetting("site_url", url);
     }
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  refresh();
+  return { ok: Date.now() };
+}
+
+// ---- Voting logins ------------------------------------------------------------
+
+/** Clear a voter's password and sign them out everywhere (new token). Votes are kept. */
+export async function resetVoter(id: number): Promise<AdminState> {
+  try {
+    await requireAdmin();
+    const { changes } = db
+      .prepare("UPDATE voters SET password_hash = NULL, token = ? WHERE id = ?")
+      .run(newToken(), id);
+    if (!changes) throw new Error("That voter no longer exists.");
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  refresh();
+  return { ok: Date.now() };
+}
+
+/** Delete a voter and all their votes. */
+export async function removeVoter(id: number): Promise<AdminState> {
+  try {
+    await requireAdmin();
+    const weeks = (db.prepare("SELECT DISTINCT week_start AS w FROM votes WHERE voter_id = ?").all(id) as { w: string }[]).map((r) => r.w);
+    db.prepare("DELETE FROM voters WHERE id = ?").run(id); // votes cascade
+    await invalidate(...weeks.map(CacheKeys.votes));
   } catch (e) {
     return { error: (e as Error).message };
   }

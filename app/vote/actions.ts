@@ -26,7 +26,11 @@ export async function signIn(_: SignInState, form: FormData): Promise<SignInStat
   if (existing) {
     // Same as when2meet: a name without a password can be picked up by anyone.
     if (existing.hash && !checkPassword(password, existing.hash)) {
-      return { error: `Wrong password for “${name}”.` };
+      return { error: `Wrong password for “${name}”. Ask an admin to reset it if you've forgotten.` };
+    }
+    // No password yet (new, or reset by an admin): whoever signs in can set one now.
+    if (!existing.hash && password) {
+      db.prepare("UPDATE voters SET password_hash = ? WHERE id = ?").run(hashPassword(password), existing.id);
     }
     token = existing.token;
   } else {

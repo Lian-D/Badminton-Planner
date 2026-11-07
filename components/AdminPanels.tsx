@@ -1,7 +1,18 @@
 "use client";
 
 import { useActionState, useOptimistic, useState, useTransition } from "react";
-import { removeAccount, removeDiscordWebhook, resetPassword, saveDiscord, saveSiteUrl, setRole, testDiscord, toggleSignups } from "@/app/admin/actions";
+import {
+  removeAccount,
+  removeDiscordWebhook,
+  removeVoter,
+  resetPassword,
+  resetVoter,
+  saveDiscord,
+  saveSiteUrl,
+  setRole,
+  testDiscord,
+  toggleSignups,
+} from "@/app/admin/actions";
 import type { Role } from "@/lib/auth";
 import { Avatar, Card, ErrorText } from "./ui";
 
@@ -229,6 +240,90 @@ export function GeneralSettings({ siteUrl, fromEnv }: { siteUrl: string | null; 
         {state?.ok && <p className="pl-1 text-[13px] text-volt">Saved.</p>}
         <button className="glass-button" disabled={saving}>{saving ? "Saving…" : "Save"}</button>
       </form>
+    </Card>
+  );
+}
+
+export type VoterRow = { id: number; name: string; hasPassword: boolean; votesThisWeek: number; lastWeek: string | null };
+
+export function VotersPanel({ voters }: { voters: VoterRow[] }) {
+  const [pending, start] = useTransition();
+  const [message, setMessage] = useState<{ error?: string; ok?: string }>();
+  const [filter, setFilter] = useState("");
+  const shown = voters.filter((v) => v.name.toLowerCase().includes(filter.trim().toLowerCase()));
+
+  const act = (fn: () => Promise<{ error?: string } | undefined>, ok: string) =>
+    start(async () => {
+      const res = await fn();
+      setMessage(res?.error ? { error: res.error } : { ok });
+    });
+
+  return (
+    <Card
+      title="Voters"
+      subtitle="People who signed in to the court vote. Resetting clears their password and signs them out everywhere; their votes stay."
+    >
+      {voters.length > 6 && (
+        <input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Search voters"
+          aria-label="Search voters"
+          className="glass-input mb-3 w-full"
+        />
+      )}
+      {voters.length === 0 ? (
+        <p className="rounded-2xl bg-white/[0.04] px-4 py-6 text-center text-[15px] text-white/55">Nobody has voted yet.</p>
+      ) : (
+        <ul className={`grouped ${pending ? "opacity-70" : ""}`}>
+          {shown.map((v) => (
+            <li key={v.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+              <Avatar name={v.name} size="sm" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 truncate text-[17px] font-medium">
+                  {v.name}
+                  {v.hasPassword && (
+                    <span title="Has a password" className="rounded-full bg-white/8 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white/60">
+                      Password
+                    </span>
+                  )}
+                </div>
+                <div className="text-[13px] text-[rgb(235_235_245/0.6)]">
+                  {v.votesThisWeek
+                    ? `${v.votesThisWeek} vote${v.votesThisWeek === 1 ? "" : "s"} this week`
+                    : v.lastWeek
+                      ? `Last voted week of ${v.lastWeek}`
+                      : "No votes yet"}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  confirm(`Reset ${v.name}'s voting login? They'll be signed out and can set a new password next time.`) &&
+                  act(() => resetVoter(v.id), `${v.name} was signed out and their password cleared.`)
+                }
+                className="text-[13px] font-medium text-cobalt-soft hover:text-white"
+              >
+                Reset login
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  confirm(`Remove ${v.name} and all their votes?`) && act(() => removeVoter(v.id), `${v.name} was removed.`)
+                }
+                className="text-[13px] font-medium text-live/90 hover:text-live"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+          {shown.length === 0 && <li className="px-4 py-4 text-[15px] text-white/50">No voters match “{filter}”.</li>}
+        </ul>
+      )}
+      <div className="mt-3">
+        <ErrorText>{message?.error}</ErrorText>
+        {message?.ok && <p className="pl-1 text-[13px] text-volt">{message.ok}</p>}
+      </div>
     </Card>
   );
 }
