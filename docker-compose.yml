@@ -1,0 +1,34 @@
+services:
+  app:
+    build: .
+    image: badminton-planner:latest
+    ports:
+      # Host port defaults to 1263; override with PORT=xxxx docker compose up
+      - "${PORT:-1263}:1263"
+    environment:
+      DB_PATH: /data/badminton.db
+      REDIS_URL: redis://redis:6379
+      # Weekly vote reminder goes out from 9am in this timezone
+      TZ: ${TZ:-UTC}
+      # Optional: public address used for links in Discord (can also be set in Admin → Settings)
+      SITE_URL: ${SITE_URL:-}
+    volumes:
+      - app-data:/data # SQLite database lives here
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Cache only: nothing is persisted, the app falls back to SQLite if it's down.
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  app-data:
